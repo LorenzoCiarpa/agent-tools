@@ -1,0 +1,25 @@
+[project]
+name = "uvt-core"
+version = "0.1.0"
+description = "Shared building blocks for uvt tools: config, logging, device detection, JobSpec/JobResult and the CLI runner."
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "Lorenzo Ciarpaglini" }]
+requires-python = ">=3.11"
+# Keep this package light: no ML frameworks, no compiled heavyweights.
+dependencies = [
+    "packaging>=23",
+    "platformdirs>=4.2,<5",
+    "pydantic>=2.7,<3",
+    "typer>=0.15,<1",
+]
+
+[project.scripts]
+uvt-info = "uvt_core.info:main"
+
+[project.urls]
+Repository = "https://github.com/LorenzoCiarpa/agent-tools"
+
+[build-system]
+requires = ["uv_build>=0.12,<0.14"]
+build-backend = "uv_build"
