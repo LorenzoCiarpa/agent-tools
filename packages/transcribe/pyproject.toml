@@ -1,0 +1,49 @@
+[project]
+name = "uvt-transcribe"
+version = "0.1.0"
+description = "Speech-to-text CLI tools (file, YouTube, microphone) with faster-whisper, Voxtral or the Mistral API."
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "Lorenzo Ciarpaglini" }]
+requires-python = ">=3.11"
+# `uv tool install` does not use the workspace lockfile: keep ranges explicit.
+dependencies = [
+    "uvt-core>=0.1,<0.2",
+    "faster-whisper>=1.1,<2",
+    "ctranslate2>=4.6.3,<5",          # >=4.6.3: no cuDNN needed on GPU
+    "av>=12",                          # decoding (bundled FFmpeg), see audio.py
+    "numpy>=1.26",
+    "yt-dlp[default]>=2026.8.19",      # YouTube changes often: keep this fresh
+    # JavaScript runtime for yt-dlp's YouTube challenge solver, as a wheel.
+    "deno>=2.3; (sys_platform == 'linux' and (platform_machine == 'x86_64' or platform_machine == 'aarch64')) or sys_platform == 'darwin' or (sys_platform == 'win32' and platform_machine == 'AMD64')",
+    "sounddevice>=0.5,<0.6",
+    "httpx>=0.27,<1",
+]
+
+[project.optional-dependencies]
+# cuBLAS for CUDA 12 as a wheel (needed for int8 on GPU, or when no CUDA toolkit is installed).
+cuda = [
+    "nvidia-cublas-cu12>=12.8,<13; (sys_platform == 'linux' and platform_machine == 'x86_64') or sys_platform == 'win32'",
+]
+# Local Voxtral (Mistral) via transformers + torch. Install with `--torch-backend auto`.
+voxtral = [
+    "torch>=2.7",
+    "transformers>=4.54,<6",
+    "mistral-common[audio]>=1.8.1",
+    "accelerate>=1.0",
+]
+
+[project.scripts]
+transcribe-file = "uvt_transcribe.cli.transcribe_file:main"
+yt-transcribe = "uvt_transcribe.cli.yt_transcribe:main"
+live-transcribe = "uvt_transcribe.cli.live_transcribe:main"
+
+[project.urls]
+Repository = "https://github.com/LorenzoCiarpa/agent-tools"
+
+[tool.uv.sources]
+uvt-core = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.12,<0.14"]
+build-backend = "uv_build"
