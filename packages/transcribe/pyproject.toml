@@ -28,8 +28,8 @@ cuda = [
 # Local Voxtral (Mistral) via transformers + torch. Install with `--torch-backend auto`.
 voxtral = [
     "torch>=2.7",
-    "transformers>=4.54,<6",
-    "mistral-common[audio]>=1.8.1",
+    "transformers>=5.2,<6",
+    "mistral-common[audio]>=1.11.5",  # transformers 5.x refuses older versions
     "accelerate>=1.0",
 ]
 

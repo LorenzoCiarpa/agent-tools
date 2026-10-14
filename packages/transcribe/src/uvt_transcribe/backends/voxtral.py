@@ -96,7 +96,7 @@ class VoxtralBackend(TranscriptionBackend):
         if self._model is not None:
             return
         try:
-            import mistral_common  # noqa: F401 - required by the Voxtral processor
+            import mistral_common  # required by the Voxtral processor
             import torch
             from transformers import AutoProcessor, VoxtralForConditionalGeneration
         except ImportError as exc:
@@ -104,6 +104,16 @@ class VoxtralBackend(TranscriptionBackend):
                 f"The voxtral backend needs torch, transformers and mistral-common ({exc}).",
                 hint=install_hint("voxtral", torch=True),
             ) from exc
+        try:
+            from transformers.utils import is_mistral_common_available
+        except ImportError:  # pragma: no cover - very old/new transformers
+            is_mistral_common_available = None
+        if is_mistral_common_available is not None and not is_mistral_common_available():
+            raise MissingDependencyError(
+                "transformers does not accept the installed mistral-common "
+                f"({getattr(mistral_common, '__version__', '?')}).",
+                hint=install_hint("voxtral", torch=True),
+            )
         quiet_hf_hub()
         self._device = self._pick_device(torch)
         default_dtype = {"cuda": "bfloat16", "mps": "float16"}.get(self._device, "float32")

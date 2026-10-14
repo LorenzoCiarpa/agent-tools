@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: true
+      - run: uv lock --check
+      - run: uv sync --locked --all-packages
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+
+  test:
+    name: test (${{ matrix.os }}, py${{ matrix.python-version }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.11", "3.13"]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+
+      - name: Unit tests
+        run: |
+          uv sync --locked --all-packages
+          uv run pytest
+
+      - name: Install every package as a tool (from path, like users do from git)
+        run: |
+          uv tool install --python ${{ matrix.python-version }} ./packages/core
+          uv tool install --python ${{ matrix.python-version }} ./packages/transcribe
+          echo "$(uv tool dir --bin)" >> "$GITHUB_PATH"
+
+      - name: Every command starts (--help) and prints JSON
+        run: |
+          for cmd in uvt-info transcribe-file yt-transcribe live-transcribe; do
+            echo "::group::$cmd --help"
+            "$cmd" --help
+            echo "::endgroup::"
+          done
+          uvt-info --json | python -c "import json,sys; r=json.load(sys.stdin); assert r['ok'], r; print(r['device'])"
+          transcribe-file --print-job tests.wav -l it | python -c "import json,sys; j=json.load(sys.stdin); assert j['tool']=='transcribe-file', j"
+          set +e; transcribe-file missing.wav --json > out.json; code=$?; set -e
+          test "$code" = 2
+          python -c "import json; r=json.load(open('out.json')); assert r['error']['type']=='invalid_input', r"

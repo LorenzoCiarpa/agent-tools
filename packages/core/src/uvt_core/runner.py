@@ -17,6 +17,7 @@ or ``execute_job(tool, func, job)`` to get a ``JobResult``.
 from __future__ import annotations
 
 import contextlib
+import logging
 import signal
 import sys
 import threading
@@ -329,7 +330,8 @@ def run(
         else:
             for artifact in result.artifacts:
                 log.info("Wrote %s", artifact.path)
-            log.info("Done in %.1f s", result.duration_s)
+            level = logging.INFO if result.duration_s >= 1 else logging.DEBUG
+            log.log(level, "Done in %.1f s", result.duration_s)
         if opts.json:
             emit_json(result, out)
         elif output is not None and on_success is not None:
@@ -349,6 +351,19 @@ def new_app(help_text: str) -> typer.Typer:
     )
 
 
+def configure_streams() -> None:
+    """UTF-8 on pipes/files (agents read UTF-8; Windows defaults to the ANSI code
+    page) and never crash on characters a console cannot show."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            if stream.isatty():
+                stream.reconfigure(errors="replace")  # type: ignore[union-attr]
+            else:
+                stream.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
+        except (AttributeError, ValueError, OSError):
+            pass
+
+
 def _is_usage_error(exc: BaseException) -> bool:
     # Click's ClickException (vendored inside recent Typer versions, so matched by shape).
     return all(hasattr(exc, attr) for attr in ("exit_code", "format_message", "show"))
@@ -361,6 +376,7 @@ def main(app: typer.Typer, tool: Tool[Any], argv: Sequence[str] | None = None) -
     requested, still print a ``JobResult`` so callers can always parse stdout.
     """
     args = list(sys.argv[1:] if argv is None else argv)
+    configure_streams()
     try:
         rv = app(args=args, prog_name=tool.name, standalone_mode=False)
     except typer.Abort:
