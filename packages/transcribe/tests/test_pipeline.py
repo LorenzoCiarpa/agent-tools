@@ -41,7 +41,14 @@ def test_transcribe_file_with_fake_backend(jfk, tmp_path):
     assert result.duration == pytest.approx(11.0, abs=0.1)
     assert [a.name for a in result.artifacts] == ["txt", "srt", "json"]
     assert (tmp_path / "out.txt").read_text() == "chunk 0\n"
-    assert json.loads((tmp_path / "out.json").read_text())["segments"][0]["text"] == "chunk 0"
+    saved = json.loads((tmp_path / "out.json").read_text())
+    assert saved["segments"][0] == {
+        "id": 0,
+        "start": 0.0,
+        "end": saved["duration"],
+        "text": "chunk 0",
+    }
+    assert saved["source"]["kind"] == "file" and "url" not in saved["source"]
     assert len(seen) == 1
 
 

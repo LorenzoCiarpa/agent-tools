@@ -82,14 +82,20 @@ def to_vtt(segments: Sequence[Segment]) -> str:
 
 
 def to_json(result: TranscriptionResult) -> str:
+    """The ``.json`` output file: transcript, metadata and timestamped segments.
+
+    Unset fields are omitted to keep files small (the ``JobResult`` printed by
+    ``--json`` keeps the full, stable schema).
+    """
     payload = {
         "text": result.text,
         "language": result.language,
         "duration": result.duration,
         "backend": result.backend,
         "model": result.model,
-        "source": result.source,
-        "segments": result.segments,
+        "from_subtitles": result.from_subtitles,
+        "source": result.source.model_dump(mode="json", exclude_none=True),
+        "segments": [s.model_dump(mode="json", exclude_none=True) for s in result.segments],
     }
     return dumps(payload, indent=2) + "\n"
 
