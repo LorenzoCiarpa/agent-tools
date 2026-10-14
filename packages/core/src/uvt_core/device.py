@@ -20,7 +20,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-DeviceKind = Literal["cuda", "mps", "cpu"]
+DeviceKind = Literal["cuda", "mps", "cpu", "remote"]  # remote = a cloud API did the work
 DeviceRequest = Literal["auto", "cuda", "mps", "cpu"]
 DEVICE_ENV = "UVT_DEVICE"
 
