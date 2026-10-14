@@ -139,7 +139,10 @@ class FasterWhisperBackend(TranscriptionBackend):
         except Exception as exc:
             if kind == "cuda" and requested == "auto":
                 log.warning("CUDA is not usable (%s); falling back to CPU.", exc)
-                log.warning("  hint: %s", CUDA_HINT.splitlines()[0])
+                log.warning(
+                    "  hint: install the 'cuda' extra (bundled cuBLAS) or a CUDA 12 toolkit "
+                    "to use the GPU; --device cpu skips this check."
+                )
                 self._model = None
                 self._load_on("cpu")
             elif kind == "cuda":
